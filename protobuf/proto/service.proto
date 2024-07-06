@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+import "data.proto"; 
+import "google/api/annotations.proto"; 
+
+option go_package = "github.com/zde37/Zero-Chain/protobuf/protogen";
+
+service WalletService {
+  rpc CreateTransaction (TransactionRequest) returns (StatusResponse) {
+    option (google.api.http) = {
+        post : "/v1/transaction"
+        body : "*"
+      };
+  };
+  
+  rpc CreateWallet (Empty) returns (CreateWalletResponse) {
+    option (google.api.http) = {
+        get : "/v1/wallet" 
+      };
+  };
+  
+  rpc WalletBalance (BalanceRequest) returns (BalanceResponse) {
+    option (google.api.http) = {
+        get : "/v1/wallet/balance" 
+      };
+  };
+
+}
+
+service BlockChainService {
+  rpc ListTransactions (Empty) returns (ListTransactionsResponse) {
+    option (google.api.http) = {
+        get : "/v1/transaction" 
+      };
+  };
+  
+  rpc GetBlockChain (Empty) returns (GetBlockChainResponse) {
+    option (google.api.http) = {
+        get : "/v1/blockchain" 
+      };
+  };
+
+  rpc WalletBalance (BalanceRequest) returns (BalanceResponse) {};
+  
+  rpc CreateTransaction (TransactionRequest) returns (StatusResponse) {};
+
+  rpc UpdateTransaction (TransactionRequest) returns (StatusResponse) {};
+
+  rpc DeleteTransaction (Empty) returns (StatusResponse) {};
+
+  rpc Consensus (Empty) returns (StatusResponse) {};
+
+}

@@ -1,0 +1,60 @@
+syntax = "proto3";
+ 
+import "google/protobuf/timestamp.proto";  
+
+option go_package = "github.com/zde37/Zero-Chain/protobuf/protogen";
+
+message Block {  
+  string hash = 1;
+  int64 nonce = 2;
+  google.protobuf.Timestamp timestamp = 3;   
+  string previous_hash = 4; 
+  repeated Transaction transactions = 5;
+}
+
+message Transaction {
+  string sender_blockchain_address = 1;
+  string recipient_blockchain_address = 2; 
+  float value = 3; 
+  string hash = 4;
+  google.protobuf.Timestamp timestamp = 5;    
+  string status = 6;   
+}
+
+message TransactionRequest {
+  string sender_blockchain_address = 1;
+  string recipient_blockchain_address = 2;
+  string sender_public_key = 3;
+  float value = 4;
+  string signature = 5;
+}
+
+message StatusResponse {
+  string status = 1;
+}
+ 
+message BalanceRequest {
+  string blockchain_address = 1;
+}
+
+message BalanceResponse {
+  string balance = 1;
+}
+
+message Empty {
+}
+
+message CreateWalletResponse {
+  string private_key = 1;
+  string public_key = 2;
+  string blockchain_address = 3;
+}
+
+message ListTransactionsResponse {
+  repeated Transaction transactions = 1;
+  int64 length = 2;
+}
+
+message GetBlockChainResponse {
+  repeated Block block_chain = 1;
+}
