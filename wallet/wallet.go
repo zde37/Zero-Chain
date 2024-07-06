@@ -23,7 +23,7 @@ type TransactionRequest struct {
 	SenderBlockchainAddress    string
 	RecipientBlockchainAddress string
 	SenderPublicKey            string
-	Value                      string
+	Value                      float32
 }
 
 func New() *Wallet {

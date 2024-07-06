@@ -6,7 +6,7 @@ import "google/api/annotations.proto";
 option go_package = "github.com/zde37/Zero-Chain/protobuf/protogen";
 
 service WalletService {
-  rpc CreateTransaction (TransactionRequest) returns (StatusResponse) {
+  rpc CreateTransaction (WalletTransactionRequest) returns (StatusResponse) {
     option (google.api.http) = {
         post : "/v1/transaction"
         body : "*"

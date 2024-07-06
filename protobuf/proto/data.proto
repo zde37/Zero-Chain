@@ -29,6 +29,14 @@ message TransactionRequest {
   string signature = 5;
 }
 
+message WalletTransactionRequest {
+  string sender_private_key = 1;         
+  string sender_blockchain_address = 2;    
+  string recipient_blockchain_address = 3;
+  string sender_public_key = 4;
+  float value = 5;
+}
+
 message StatusResponse {
   string status = 1;
 }
@@ -38,7 +46,7 @@ message BalanceRequest {
 }
 
 message BalanceResponse {
-  string balance = 1;
+  float balance = 1;
 }
 
 message Empty {

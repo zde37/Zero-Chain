@@ -20,7 +20,7 @@ type WalletServiceImpl struct {
 	port    uint16
 	gateway string
 	conn    *grpc.ClientConn
-	client  protogen.WalletServiceClient
+	client  protogen.BlockChainServiceClient
 }
 
 type BlockChainServiceImpl struct {
@@ -40,7 +40,7 @@ func NewWalletServiceImpl(port uint16, gateway string) (WalletService, error) {
 	}
 	// defer w.conn.Close() // call this during graceful shutdown
 
-	w.client = protogen.NewWalletServiceClient(w.conn)
+	w.client = protogen.NewBlockChainServiceClient(w.conn)
 	return w, nil
 }
 
@@ -49,17 +49,8 @@ func NewBlockChainServiceImpl(port uint16) BlockChainService {
 }
 
 func (w *WalletServiceImpl) CreateTransaction(ctx context.Context, tr wallet.TransactionRequest) error {
-	if !w.validateTransactionRequest(tr) {
-		return fmt.Errorf("ERR: create wallet transaction failed due to missing fields")
-	}
-
 	publicKey := helpers.PublicKeyFromString(tr.SenderPublicKey)
 	privateKey := helpers.PrivateKeyFromString(tr.SenderPrivateKey, publicKey)
-	value, err := strconv.ParseFloat(tr.Value, 32)
-	if err != nil {
-		return fmt.Errorf("ERR: failed to convert string to float")
-	}
-	value32 := float32(value)
 	if tr.SenderBlockchainAddress == tr.RecipientBlockchainAddress {
 		return fmt.Errorf("ERR: c'mon man, you can't send z-coin to yourself")
 	}
@@ -67,11 +58,11 @@ func (w *WalletServiceImpl) CreateTransaction(ctx context.Context, tr wallet.Tra
 	if err != nil {
 		return fmt.Errorf("ERR: failed to fetch wallet balance: %v", err)
 	}
-	if senderBalance < value32 {
+	if senderBalance < tr.Value {
 		return fmt.Errorf("ERR: insufficient funds for this transaction")
 	}
 
-	transaction := transaction.NewMetaData(privateKey, publicKey, tr.SenderBlockchainAddress, tr.RecipientBlockchainAddress, value32)
+	transaction := transaction.NewMetaData(privateKey, publicKey, tr.SenderBlockchainAddress, tr.RecipientBlockchainAddress, tr.Value)
 	signature := transaction.GenerateSignature()
 	signatureStr := signature.String()
 
@@ -79,7 +70,7 @@ func (w *WalletServiceImpl) CreateTransaction(ctx context.Context, tr wallet.Tra
 		SenderBlockchainAddress:    tr.SenderBlockchainAddress,
 		RecipientBlockchainAddress: tr.RecipientBlockchainAddress,
 		SenderPublicKey:            tr.SenderPublicKey,
-		Value:                      float32(value),
+		Value:                      tr.Value,
 		Signature:                  signatureStr,
 	})
 	if err != nil || resp.GetStatus() != "Success" {
@@ -97,25 +88,9 @@ func (w *WalletServiceImpl) GetWalletBalance(ctx context.Context, blockchainAddr
 		BlockchainAddress: blockchainAddress,
 	})
 	if err != nil {
-		return 0.0, fmt.Errorf("ERR: failed to get wallet balance: %v", err)
+		return 0, fmt.Errorf("ERR: failed to get wallet balance: %v", err)
 	}
-	balance, err := strconv.ParseFloat(resp.GetBalance(), 32)
-	if err != nil {
-		return 0.0, fmt.Errorf("ERR: failed to convert string to float")
-	}
-	balance32 := float32(balance)
-	return balance32, nil
-}
-
-func (w *WalletServiceImpl) validateTransactionRequest(tr wallet.TransactionRequest) bool {
-	if tr.SenderPrivateKey == "" ||
-		tr.SenderPublicKey == "" ||
-		tr.SenderBlockchainAddress == "" ||
-		tr.RecipientBlockchainAddress == "" ||
-		tr.Value == "" {
-		return false
-	}
-	return true
+	return resp.GetBalance(), nil
 }
 
 func (b *BlockChainServiceImpl) getBlockchain() *blockchain.BlockChain {

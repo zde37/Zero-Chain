@@ -28,7 +28,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type WalletServiceClient interface {
-	CreateTransaction(ctx context.Context, in *TransactionRequest, opts ...grpc.CallOption) (*StatusResponse, error)
+	CreateTransaction(ctx context.Context, in *WalletTransactionRequest, opts ...grpc.CallOption) (*StatusResponse, error)
 	CreateWallet(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*CreateWalletResponse, error)
 	WalletBalance(ctx context.Context, in *BalanceRequest, opts ...grpc.CallOption) (*BalanceResponse, error)
 }
@@ -41,7 +41,7 @@ func NewWalletServiceClient(cc grpc.ClientConnInterface) WalletServiceClient {
 	return &walletServiceClient{cc}
 }
 
-func (c *walletServiceClient) CreateTransaction(ctx context.Context, in *TransactionRequest, opts ...grpc.CallOption) (*StatusResponse, error) {
+func (c *walletServiceClient) CreateTransaction(ctx context.Context, in *WalletTransactionRequest, opts ...grpc.CallOption) (*StatusResponse, error) {
 	out := new(StatusResponse)
 	err := c.cc.Invoke(ctx, WalletService_CreateTransaction_FullMethodName, in, out, opts...)
 	if err != nil {
@@ -72,7 +72,7 @@ func (c *walletServiceClient) WalletBalance(ctx context.Context, in *BalanceRequ
 // All implementations must embed UnimplementedWalletServiceServer
 // for forward compatibility
 type WalletServiceServer interface {
-	CreateTransaction(context.Context, *TransactionRequest) (*StatusResponse, error)
+	CreateTransaction(context.Context, *WalletTransactionRequest) (*StatusResponse, error)
 	CreateWallet(context.Context, *Empty) (*CreateWalletResponse, error)
 	WalletBalance(context.Context, *BalanceRequest) (*BalanceResponse, error)
 	mustEmbedUnimplementedWalletServiceServer()
@@ -82,7 +82,7 @@ type WalletServiceServer interface {
 type UnimplementedWalletServiceServer struct {
 }
 
-func (UnimplementedWalletServiceServer) CreateTransaction(context.Context, *TransactionRequest) (*StatusResponse, error) {
+func (UnimplementedWalletServiceServer) CreateTransaction(context.Context, *WalletTransactionRequest) (*StatusResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateTransaction not implemented")
 }
 func (UnimplementedWalletServiceServer) CreateWallet(context.Context, *Empty) (*CreateWalletResponse, error) {
@@ -105,7 +105,7 @@ func RegisterWalletServiceServer(s grpc.ServiceRegistrar, srv WalletServiceServe
 }
 
 func _WalletService_CreateTransaction_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TransactionRequest)
+	in := new(WalletTransactionRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -117,7 +117,7 @@ func _WalletService_CreateTransaction_Handler(srv interface{}, ctx context.Conte
 		FullMethod: WalletService_CreateTransaction_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(WalletServiceServer).CreateTransaction(ctx, req.(*TransactionRequest))
+		return srv.(WalletServiceServer).CreateTransaction(ctx, req.(*WalletTransactionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
