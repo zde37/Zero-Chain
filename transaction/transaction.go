@@ -12,19 +12,19 @@ type Transaction struct {
 	RecipientBlockChainAddress string   `json:"recipient_blockchain_address"`
 	Value                      float32  `json:"value"`
 	Hash                       [32]byte `json:"hash"`
-	TimeStamp                  int64    `json:"timestamp"`
+	TimeStamp                  string   `json:"timestamp"`
 	Status                     string   `json:"status"`
 }
 
 func New(senderBlockChainAddress string, recipientBlockChainAddress string, value float32) *Transaction {
-	t := &Transaction{
-		SenderBlockChainAddress:    senderBlockChainAddress,
-		RecipientBlockChainAddress: recipientBlockChainAddress,
-		Value:                      value,
-		TimeStamp:                  time.Now().UnixNano(),
-		Status:                     "Pending",
-	}
+	t := new(Transaction)
+	t.SenderBlockChainAddress = senderBlockChainAddress
+	t.RecipientBlockChainAddress = recipientBlockChainAddress
+	t.Value = value
+	t.TimeStamp = time.Now().String()
+	t.Status = "Pending"
 	t.Hash = t.TxHash()
+
 	return t
 }
 

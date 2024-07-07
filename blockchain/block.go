@@ -12,18 +12,20 @@ import (
 type Block struct {
 	Hash         [32]byte                   `json:"hash"`
 	Nonce        int                        `json:"int"`
-	Timestamp    int64                      `json:"timestamp"`
+	Index        int                        `json:"index"`
+	TimeStamp    string                     `json:"timestamp"`
 	PreviousHash [32]byte                   `json:"previous_hash"`
 	Transactions []*transaction.Transaction `json:"transactions"`
 }
 
-func NewBlock(nonce int, previousHash [32]byte, transactions []*transaction.Transaction) *Block {
-	b := &Block{
-		Nonce:        nonce,
-		PreviousHash: previousHash,
-		Transactions: transactions,
-		Timestamp:    time.Now().UnixNano(),
-	}
+func NewBlock(nonce, previousIndex int, previousHash [32]byte, transactions []*transaction.Transaction) *Block {
+	b := new(Block)
+	b.Nonce = nonce
+	b.Index = previousIndex + 1
+	b.PreviousHash = previousHash
+	b.Transactions = transactions
+	b.TimeStamp = time.Now().String()
+
 	b.Hash = b.GenerateHash()
 
 	return b

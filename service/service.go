@@ -15,7 +15,7 @@ type WalletService interface {
 }
 
 type BlockChainService interface {
-	CreateTransaction(t transaction.Request) error
+	CreateTransaction(ctx context.Context, t transaction.Request) error
 	UpdateTransaction(t transaction.Request) error
 	ListTransactions() ([]*transaction.Transaction, int)
 	DeleteTransactions() error

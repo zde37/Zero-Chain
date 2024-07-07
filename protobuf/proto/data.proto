@@ -1,15 +1,14 @@
 syntax = "proto3";
  
-import "google/protobuf/timestamp.proto";  
-
 option go_package = "github.com/zde37/Zero-Chain/protobuf/protogen";
 
 message Block {  
   string hash = 1;
   int64 nonce = 2;
-  google.protobuf.Timestamp timestamp = 3;   
-  string previous_hash = 4; 
-  repeated Transaction transactions = 5;
+  int64 index = 3;
+  string timestamp = 4;   
+  string previous_hash = 5; 
+  repeated Transaction transactions = 6;
 }
 
 message Transaction {
@@ -17,7 +16,7 @@ message Transaction {
   string recipient_blockchain_address = 2; 
   float value = 3; 
   string hash = 4;
-  google.protobuf.Timestamp timestamp = 5;    
+  string timestamp = 5;    
   string status = 6;   
 }
 

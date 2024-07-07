@@ -27,8 +27,8 @@ func (ws *WalletServer) CreateTransaction(ctx context.Context, req *protogen.Wal
 	return &protogen.StatusResponse{
 		Status: "Success",
 	}, nil
-
 }
+
 func (ws *WalletServer) CreateWallet(ctx context.Context, req *protogen.Empty) (*protogen.CreateWalletResponse, error) {
 	wallet := ws.walletService.CreateWallet()
 

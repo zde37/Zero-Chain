@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"github.com/zde37/Zero-Chain/blockchain"
 	"github.com/zde37/Zero-Chain/helpers"
@@ -106,15 +105,11 @@ func (b *BlockChainServiceImpl) getBlockchain() *blockchain.BlockChain {
 	return bc
 }
 
-func (b *BlockChainServiceImpl) CreateTransaction(t transaction.Request) error {
-	if !b.validateTransaction(t) {
-		return fmt.Errorf("ERR: create transaction failed due to missing fields")
-	}
-
+func (b *BlockChainServiceImpl) CreateTransaction(ctx context.Context, t transaction.Request) error {
 	publicKey := helpers.PublicKeyFromString(t.SenderPublicKey)
 	signature := helpers.SignatureFromString(t.Signature)
 	bc := b.getBlockchain()
-	isCreated := bc.CreateTransaction(t.SenderBlockchainAddress, t.RecipientBlockchainAddress, t.Value, publicKey, signature)
+	isCreated := bc.CreateTransaction(ctx, t.SenderBlockchainAddress, t.RecipientBlockchainAddress, t.Value, publicKey, signature)
 
 	if !isCreated {
 		return fmt.Errorf("ERR: failed to create transaction")
@@ -123,10 +118,6 @@ func (b *BlockChainServiceImpl) CreateTransaction(t transaction.Request) error {
 }
 
 func (b *BlockChainServiceImpl) UpdateTransaction(t transaction.Request) error {
-	if !b.validateTransaction(t) {
-		return fmt.Errorf("ERR: update transaction failed due to missing fields")
-	}
-
 	publicKey := helpers.PublicKeyFromString(t.SenderPublicKey)
 	signature := helpers.SignatureFromString(t.Signature)
 	bc := b.getBlockchain()
@@ -165,15 +156,4 @@ func (b *BlockChainServiceImpl) GetBlockChain() []*blockchain.Block {
 func (b *BlockChainServiceImpl) GetWalletBalance(blockchainAddress string) float32 {
 	bc := b.getBlockchain()
 	return bc.CalculateWalletBalance(blockchainAddress)
-}
-
-func (b *BlockChainServiceImpl) validateTransaction(t transaction.Request) bool {
-	if &t.Signature == nil ||
-		&t.SenderPublicKey == nil ||
-		&t.SenderBlockchainAddress == nil ||
-		&t.RecipientBlockchainAddress == nil ||
-		&t.Value == nil {
-		return false
-	}
-	return true
 }
