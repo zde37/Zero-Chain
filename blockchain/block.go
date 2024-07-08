@@ -10,12 +10,12 @@ import (
 )
 
 type Block struct {
-	Hash         [32]byte                   `json:"hash"`
-	Nonce        int                        `json:"int"`
-	Index        int                        `json:"index"`
-	TimeStamp    string                     `json:"timestamp"`
-	PreviousHash [32]byte                   `json:"previous_hash"`
-	Transactions []*transaction.Transaction `json:"transactions"`
+	Hash         [32]byte                    
+	Nonce        int                         
+	Index        int                         
+	TimeStamp    string                      
+	PreviousHash [32]byte                    
+	Transactions []*transaction.Transaction  
 }
 
 func NewBlock(nonce, previousIndex int, previousHash [32]byte, transactions []*transaction.Transaction) *Block {

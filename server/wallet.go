@@ -1,7 +1,7 @@
 package server
 
 import (
-	"context"
+	"context" 
 
 	"github.com/zde37/Zero-Chain/protobuf/protogen"
 	"github.com/zde37/Zero-Chain/wallet"
@@ -13,24 +13,27 @@ func (ws *WalletServer) CreateTransaction(ctx context.Context, req *protogen.Wal
 	if !ws.validateTransactionRequest(req) {
 		return nil, status.Errorf(codes.InvalidArgument, "failed due to missing fields")
 	}
-
+ 
 	if err := ws.walletService.CreateTransaction(ctx, wallet.TransactionRequest{
 		SenderPrivateKey:           req.GetSenderPrivateKey(),
 		SenderBlockchainAddress:    req.GetSenderBlockchainAddress(),
 		RecipientBlockchainAddress: req.GetRecipientBlockchainAddress(),
 		SenderPublicKey:            req.GetSenderPublicKey(),
 		Value:                      req.GetValue(),
-	}); err != nil {
+	}); err != nil { 
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-
+ 
 	return &protogen.StatusResponse{
 		Status: "Success",
 	}, nil
 }
 
 func (ws *WalletServer) CreateWallet(ctx context.Context, req *protogen.Empty) (*protogen.CreateWalletResponse, error) {
-	wallet := ws.walletService.CreateWallet()
+	wallet, err := ws.walletService.CreateWallet()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
 
 	return &protogen.CreateWalletResponse{
 		PrivateKey:        wallet.PrivateKeyStr(),

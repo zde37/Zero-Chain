@@ -10,7 +10,7 @@ import (
 
 type WalletService interface {
 	CreateTransaction(ctx context.Context, tr wallet.TransactionRequest) error
-	CreateWallet() wallet.Wallet
+	CreateWallet() (*wallet.Wallet, error)
 	GetWalletBalance(ctx context.Context, blockchainAddress string) (float32, error)
 }
 
@@ -20,6 +20,7 @@ type BlockChainService interface {
 	ListTransactions() ([]*transaction.Transaction, int)
 	DeleteTransactions() error
 	Consensus() error
+	Run()  
 	GetBlockChain() []*blockchain.Block
 	GetWalletBalance(blockchainAddress string) float32
 }

@@ -5,7 +5,6 @@ import (
 	"crypto/ecdsa"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
@@ -20,16 +19,16 @@ import (
 )
 
 const (
-	MINING_DIFFICULTY = 5
+	MINING_DIFFICULTY = 4
 	MINING_SENDER     = "Zero-Chain"
-	MINING_REWARD     = 7.0
-	// MINING_TIMER_SEC  = 180 // 5 minutes
+	MINING_REWARD     = 2.0
+	MINING_TIMER_SEC  = 200
 
-	BLOCKCHAIN_PORT_RANGE_START       = 5000
-	BLOCKCHAIN_PORT_RANGE_END         = 5003
+	BLOCKCHAIN_PORT_RANGE_START       = 7000
+	BLOCKCHAIN_PORT_RANGE_END         = 7003
 	NEIGHBOR_IP_RANGE_START           = 0
 	NEIGHBOR_IP_RANGE_END             = 1
-	BLOCKCHAIN_NEIGHBOR_SYNC_TIME_SEC = 20
+	BLOCKCHAIN_NEIGHBOR_SYNC_TIME_SEC = 10
 )
 
 type BlockChain struct {
@@ -38,6 +37,10 @@ type BlockChain struct {
 	BlockChainAddress string
 	Port              uint16
 	mut               sync.Mutex
+	wgConsensus       *sync.WaitGroup
+	wgMining          *sync.WaitGroup
+	transactionChan   chan bool
+	wgBlock           *sync.WaitGroup
 
 	neighbors    []string
 	mutNeighbors sync.Mutex
@@ -47,20 +50,35 @@ func New(blockchainAddress string, port uint16) *BlockChain {
 	bc := new(BlockChain)
 	bc.BlockChainAddress = blockchainAddress
 	bc.Port = port
-	bc.CreateBlock(0, 0, [32]byte{}) // genesis block
+	bc.wgConsensus = new(sync.WaitGroup)
+	bc.wgBlock = new(sync.WaitGroup)
+	bc.transactionChan = make(chan bool)
+	bc.wgMining = new(sync.WaitGroup)
+	bc.genesisBlock() 
 	return bc
 }
 
 func (bc *BlockChain) Run() {
 	bc.StartSyncNeighbors()
 	bc.ResolveConflicts()
-	bc.Mining()
+	bc.StartMining()
+}
+
+func(bc *BlockChain) genesisBlock()  {
+	block := new(Block) 
+	block.Hash = block.GenerateHash()
+	block.Index = 0
+	block.PreviousHash = [32]byte{}
+	block.TimeStamp = time.Now().String() 
+	bc.Chain = append(bc.Chain, block)
 }
 
 func (bc *BlockChain) CreateBlock(nonce, previousIndex int, previousHash [32]byte) {
 	block := NewBlock(nonce, previousIndex, previousHash, bc.MemPool)
 	bc.Chain = append(bc.Chain, block)
 	bc.MemPool = []*transaction.Transaction{} // clear memory pool on current blockchain node
+
+	bc.wgBlock.Add(len(bc.neighbors))
 	ctx := context.Background()
 	for _, n := range bc.neighbors { // clear memory pool on other blockchain nodes
 		go func() {
@@ -80,15 +98,19 @@ func (bc *BlockChain) CreateBlock(nonce, previousIndex int, previousHash [32]byt
 				log.Printf("create-block: failed to clear mempool on %s node: %v", n, err)
 				return
 			}
+			bc.wgBlock.Done()
 			log.Printf("create-block: %s", resp.GetStatus())
 		}()
 	}
+	bc.wgBlock.Wait()
 }
 
 func (bc *BlockChain) SetNeighbors() {
 	bc.neighbors = helpers.FindNeighbors(
-		helpers.GetHost(), bc.Port, NEIGHBOR_IP_RANGE_START, NEIGHBOR_IP_RANGE_END,
+		"127.0.0.1", bc.Port, NEIGHBOR_IP_RANGE_START, NEIGHBOR_IP_RANGE_END,
 		BLOCKCHAIN_PORT_RANGE_START, BLOCKCHAIN_PORT_RANGE_END)
+
+	log.Printf("neighbors: %v", bc.neighbors)
 }
 
 func (bc *BlockChain) SyncNeighbors() {
@@ -118,7 +140,7 @@ func (bc *BlockChain) ValidProof(nonce int,
 	tryBlock := Block{
 		Nonce:        nonce,
 		PreviousHash: previousHash,
-		TimeStamp:    time.Now().String(),
+		TimeStamp:    "",
 		Transactions: transactions,
 	}
 	tryHashStr := fmt.Sprintf("%x", tryBlock.GenerateHash())
@@ -141,24 +163,24 @@ func (bc *BlockChain) LastBlock() *Block {
 }
 
 func (bc *BlockChain) CreateTransaction(ctx context.Context, sender, recipient string, value float32, senderPublicKey *ecdsa.PublicKey, s *helpers.Signature) bool {
-	isTransacted := bc.AddTransaction(sender, recipient, value, senderPublicKey, s)
-
+	isTransacted := bc.AddTransaction(sender, recipient, value, senderPublicKey, s) 
 	if isTransacted {
 		publicKeyStr := fmt.Sprintf("%064x%064x", senderPublicKey.X.Bytes(), senderPublicKey.Y.Bytes())
 		signatureStr := s.String()
-
+ 
 		for _, n := range bc.neighbors {
-			go func() {
+			go func(ch chan<- bool) {
 				conn, err := grpc.NewClient(
 					n,
 					grpc.WithTransportCredentials(insecure.NewCredentials()),
-				)
+				) 
 				if err != nil {
 					log.Printf("create-transaction: failed to create grpc client on %s node: %v", n, err)
+					ch <- false
 					return
 				}
 				defer conn.Close()
-
+ 
 				client := protogen.NewBlockChainServiceClient(conn)
 				resp, err := client.UpdateTransaction(ctx, &protogen.TransactionRequest{
 					SenderBlockchainAddress:    sender,
@@ -166,15 +188,19 @@ func (bc *BlockChain) CreateTransaction(ctx context.Context, sender, recipient s
 					SenderPublicKey:            publicKeyStr,
 					Signature:                  signatureStr,
 					Value:                      value,
-				})
+				}) 
 				if err != nil {
 					log.Printf("create-transaction: failed to update transaction on %s node: %v", n, err)
+					ch <- false
 					return
 				}
+ 
+				ch <- true
 				log.Printf("create-transaction: %s", resp.GetStatus())
-
-			}()
+			}(bc.transactionChan)
 		}
+
+		isTransacted = <-bc.transactionChan 
 	}
 
 	return isTransacted
@@ -187,24 +213,25 @@ func (bc *BlockChain) AddTransaction(senderBlockChainAddress, recipientBlockChai
 		bc.MemPool = append(bc.MemPool, t)
 		return true
 	}
-
-	if bc.VerifyTransactionSignature(senderPublicKey, s, t) {
+	 
+	if bc.VerifyTransactionSignature(senderPublicKey, s, t) { 
 		if senderBlockChainAddress == recipientBlockChainAddress { // this should be checked on the wallet server and frontend and returned to the user
 			log.Println("blockchain: you can't send money to yourself")
 			return false
-		}
+		} 
 		if bc.CalculateWalletBalance(senderBlockChainAddress) < value { // this should be checked on the wallet server and frontend and returned to the user
 			log.Println("blockchain: Insufficient funds")
 			return false
-		}
+		} 
 		bc.MemPool = append(bc.MemPool, t)
 		return true
-	}
+	} 
 	return false
 }
 
 func (bc *BlockChain) VerifyTransactionSignature(senderPublicKey *ecdsa.PublicKey, s *helpers.Signature, t *transaction.Transaction) bool {
-	m, err := json.Marshal(t)
+	// m, err := json.Marshal(t)
+	m, err := t.MarshalJSON()
 	if err != nil {
 		log.Printf("blockchain: failed to marshal transaction: %v", err)
 		return false
@@ -213,16 +240,28 @@ func (bc *BlockChain) VerifyTransactionSignature(senderPublicKey *ecdsa.PublicKe
 	return ecdsa.Verify(senderPublicKey, hash[:], s.R, s.S)
 }
 
-func (bc *BlockChain) Mining() {
-	// bc.mut.Lock()
-	// defer bc.mut.Unlock()
+func (bc *BlockChain) StartMining() {
+	t := time.NewTicker(MINING_TIMER_SEC * time.Second)
+	go func(ticker *time.Ticker) {
+		for range ticker.C {
+			bc.Mining()
+		}
+	}(t) // add ticker.Stop() during graceful shutdown
+	// bc.Mining()
+	// _ = time.AfterFunc(MINING_TIMER_SEC*time.Second, bc.Mining)
+}
 
+func (bc *BlockChain) Mining() {
+	bc.mut.Lock()
+	defer bc.mut.Unlock()
+
+	bc.AddTransaction(MINING_SENDER, bc.BlockChainAddress, MINING_REWARD, nil, nil)
 	nonce := bc.ProofOfWork()
 	previousHash := bc.LastBlock().Hash
 	previousIndex := bc.LastBlock().Index
-	bc.AddTransaction(MINING_SENDER, bc.BlockChainAddress, MINING_REWARD, nil, nil)
 	bc.CreateBlock(nonce, previousIndex, previousHash)
 
+	bc.wgMining.Add(len(bc.neighbors))
 	ctx := context.Background()
 	for _, n := range bc.neighbors {
 		go func() {
@@ -242,9 +281,11 @@ func (bc *BlockChain) Mining() {
 				log.Printf("mining: consensus failed on %s node: %v", n, err)
 				return
 			}
+			bc.wgMining.Done()
 			log.Printf("mining: consensus %s", resp.GetStatus())
 		}()
 	}
+	bc.wgMining.Wait()
 }
 
 func (bc *BlockChain) CalculateWalletBalance(blockchainAddress string) float32 {
@@ -294,6 +335,7 @@ func (bc *BlockChain) ValidChain(chain []*Block) bool {
 func (bc *BlockChain) ResolveConflicts() bool {
 	var longestChain []*Block = nil
 	maxLength := len(bc.Chain)
+	bc.wgConsensus.Add(len(bc.neighbors))
 
 	ctx := context.Background()
 	for _, n := range bc.neighbors {
@@ -306,33 +348,34 @@ func (bc *BlockChain) ResolveConflicts() bool {
 				log.Printf("resolve-conflicts: failed to create grpc client on %s node: %v", n, err)
 				return
 			}
-			defer conn.Close()
-
+			defer conn.Close() 
 			client := protogen.NewBlockChainServiceClient(conn)
 			resp, err := client.GetBlockChain(ctx, &protogen.Empty{})
 			if err != nil {
 				log.Printf("resolve-conflicts: failed to update transaction on %s node: %v", n, err)
 				return
 			}
-
+ 
 			chain, err := bc.convertProtoBlockChain(resp.GetBlockChain())
 			if err != nil {
 				log.Printf("resolve-conflicts: %v", err)
 				return
-			}
+			} 
 			if len(chain) > maxLength && bc.ValidChain(chain) {
 				maxLength = len(chain)
-				longestChain = chain
-			}
+				longestChain = chain 
+			} 
+			bc.wgConsensus.Done()
 		}()
 	}
+	bc.wgConsensus.Wait()
 	if longestChain == nil {
-		log.Println("resolve conflicts success")
+		log.Println("resolve conflicts failed")
 		return false
 	}
 
 	bc.Chain = longestChain
-	log.Println("resolve conflicts failed")
+	log.Println("resolve conflicts success")
 	return true
 }
 
@@ -379,7 +422,6 @@ func (bc *BlockChain) convertProtoTransactions(tx []*protogen.Transaction) ([]*t
 			SenderBlockChainAddress:    t.GetSenderBlockchainAddress(),
 			RecipientBlockChainAddress: t.GetRecipientBlockchainAddress(),
 			Value:                      t.GetValue(),
-			Status:                     t.GetStatus(),
 			TimeStamp:                  t.GetTimestamp(),
 			Hash:                       hash,
 		})

@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
-	"fmt"
+	"fmt" 
+	"strconv"
+	"strings"
 
 	"github.com/zde37/Zero-Chain/blockchain"
 	"github.com/zde37/Zero-Chain/helpers"
@@ -13,7 +15,10 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-var DB map[string]*blockchain.BlockChain = make(map[string]*blockchain.BlockChain) // in-memory database
+var (
+	DB           map[string]*blockchain.BlockChain = make(map[string]*blockchain.BlockChain) // in-memory database
+	minersWallet map[uint16]*wallet.Wallet         = make(map[uint16]*wallet.Wallet)
+)
 
 type WalletServiceImpl struct {
 	port    uint16
@@ -78,8 +83,14 @@ func (w *WalletServiceImpl) CreateTransaction(ctx context.Context, tr wallet.Tra
 	return nil
 }
 
-func (w *WalletServiceImpl) CreateWallet() wallet.Wallet {
-	return *wallet.New()
+func (w *WalletServiceImpl) CreateWallet() (*wallet.Wallet, error) {
+	val := strings.Split(w.gateway, ":")
+
+	port, err := strconv.ParseUint(val[1], 10, 16)
+	if err != nil {
+		return nil, fmt.Errorf("create-wallet: failed to parse port number%v", err)
+	}
+	return getWallet(uint16(port)), nil
 }
 
 func (w *WalletServiceImpl) GetWalletBalance(ctx context.Context, blockchainAddress string) (float32, error) {
@@ -92,17 +103,27 @@ func (w *WalletServiceImpl) GetWalletBalance(ctx context.Context, blockchainAddr
 	return resp.GetBalance(), nil
 }
 
+func getWallet(port uint16) *wallet.Wallet {
+	w, ok := minersWallet[port]
+	if !ok {
+		w = wallet.New()
+		minersWallet[port] = w
+	}
+	return w
+}
+
 func (b *BlockChainServiceImpl) getBlockchain() *blockchain.BlockChain {
 	bc, ok := DB["blockchain"] // check if blockchain already exists
 	if !ok {
-		minersWallet := wallet.New()
+		minersWallet := getWallet(b.port)
 		bc = blockchain.New(minersWallet.BlockchainAddress, b.port)
 		DB["blockchain"] = bc
-		fmt.Printf("private_key %s\n", minersWallet.PrivateKeyStr())
-		fmt.Printf("public_key %s\n", minersWallet.PublicKeyStr())
-		fmt.Printf("blockchain_address %s\n", minersWallet.BlockchainAddress)
 	}
 	return bc
+}
+
+func (b *BlockChainServiceImpl) Run() {
+	b.getBlockchain().Run()
 }
 
 func (b *BlockChainServiceImpl) CreateTransaction(ctx context.Context, t transaction.Request) error {
@@ -110,11 +131,11 @@ func (b *BlockChainServiceImpl) CreateTransaction(ctx context.Context, t transac
 	signature := helpers.SignatureFromString(t.Signature)
 	bc := b.getBlockchain()
 	isCreated := bc.CreateTransaction(ctx, t.SenderBlockchainAddress, t.RecipientBlockchainAddress, t.Value, publicKey, signature)
-
+ 
 	if !isCreated {
 		return fmt.Errorf("ERR: failed to create transaction")
 	}
-	return nil
+ 	return nil
 }
 
 func (b *BlockChainServiceImpl) UpdateTransaction(t transaction.Request) error {
@@ -122,8 +143,7 @@ func (b *BlockChainServiceImpl) UpdateTransaction(t transaction.Request) error {
 	signature := helpers.SignatureFromString(t.Signature)
 	bc := b.getBlockchain()
 	isUpdated := bc.AddTransaction(t.SenderBlockchainAddress, t.RecipientBlockchainAddress, t.Value, publicKey, signature)
-
-	if !isUpdated {
+ 	if !isUpdated {
 		return fmt.Errorf("ERR: failed to update transaction")
 	}
 	return nil

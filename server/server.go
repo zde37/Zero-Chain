@@ -2,9 +2,11 @@ package server
 
 import (
 	"context"
+	"html/template"
 	"log"
 	"net"
 	"net/http"
+	"sync"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/zde37/Zero-Chain/config"
@@ -58,6 +60,7 @@ func (bcs *BlockChainServer) RunGrpcServer() {
 	defer listener.Close()
 
 	log.Printf("server: blockchain gRPC server started on: %s", bcs.config.BlockChainGrpcServerAddr)
+	go bcs.blockChainService.Run()
 	if err = grpcServer.Serve(listener); err != nil {
 		log.Printf("server: failed to start blockchain gRPC server: %v", err)
 		return
@@ -66,7 +69,7 @@ func (bcs *BlockChainServer) RunGrpcServer() {
 
 func (bcs *BlockChainServer) RunGatewayServer() {
 	jsonOption := runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
-		MarshalOptions:   protojson.MarshalOptions{UseProtoNames: true},
+		MarshalOptions:   protojson.MarshalOptions{UseProtoNames: true, EmitUnpopulated: true},
 		UnmarshalOptions: protojson.UnmarshalOptions{DiscardUnknown: true},
 	})
 	grpcMux := runtime.NewServeMux(jsonOption)
@@ -84,7 +87,21 @@ func (bcs *BlockChainServer) RunGatewayServer() {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("Hello World"))
 	}))
+	mux.Handle("/explorer", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { // health route
+		var (
+			err  error
+			once sync.Once
+			tpl  *template.Template
+		)
 
+		once.Do(func() {
+			tpl, err = template.ParseFiles("./templates/explorer.html")
+		})
+		if err != nil {
+			log.Fatalf("failed to parse templates: %v", err)
+		}
+		tpl.Execute(w, "")
+	}))
 	httpServer := &http.Server{
 		Handler: mux,
 		Addr:    bcs.config.BlockChainGatewayServerAddr,
@@ -147,6 +164,21 @@ func (s *WalletServer) RunGatewayServer() {
 	mux.Handle("/hello-world", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { // health route
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("Hello World"))
+	}))
+	mux.Handle("/index", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { // health route
+		var (
+			err  error
+			once sync.Once
+			tpl  *template.Template
+		)
+
+		once.Do(func() {
+			tpl, err = template.ParseFiles("./templates/index.html")
+		})
+		if err != nil {
+			log.Fatalf("failed to parse templates: %v", err)
+		}
+		tpl.Execute(w, "")
 	}))
 
 	httpServer := &http.Server{

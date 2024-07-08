@@ -8,12 +8,11 @@ import (
 )
 
 type Transaction struct {
-	SenderBlockChainAddress    string   `json:"sender_blockchain_address"`
-	RecipientBlockChainAddress string   `json:"recipient_blockchain_address"`
-	Value                      float32  `json:"value"`
-	Hash                       [32]byte `json:"hash"`
-	TimeStamp                  string   `json:"timestamp"`
-	Status                     string   `json:"status"`
+	SenderBlockChainAddress    string
+	RecipientBlockChainAddress string
+	Value                      float32
+	Hash                       [32]byte
+	TimeStamp                  string
 }
 
 func New(senderBlockChainAddress string, recipientBlockChainAddress string, value float32) *Transaction {
@@ -22,7 +21,6 @@ func New(senderBlockChainAddress string, recipientBlockChainAddress string, valu
 	t.RecipientBlockChainAddress = recipientBlockChainAddress
 	t.Value = value
 	t.TimeStamp = time.Now().String()
-	t.Status = "Pending"
 	t.Hash = t.TxHash()
 
 	return t
@@ -35,4 +33,16 @@ func (t *Transaction) TxHash() [32]byte {
 		return sha256.Sum256([]byte("Invalid transaction hash"))
 	}
 	return sha256.Sum256([]byte(m))
+}
+
+func (t *Transaction) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Sender    string  `json:"sender_blockchain_address"`
+		Recipient string  `json:"recipient_blockchain_address"`
+		Value     float32 `json:"value"`
+	}{
+		Sender:    t.SenderBlockChainAddress,
+		Recipient: t.RecipientBlockChainAddress,
+		Value:     t.Value,
+	})
 }

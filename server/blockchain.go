@@ -60,6 +60,7 @@ func (bcs *BlockChainServer) CreateTransaction(ctx context.Context, req *protoge
 }
 
 func (bcs *BlockChainServer) UpdateTransaction(ctx context.Context, req *protogen.TransactionRequest) (*protogen.StatusResponse, error) {
+
 	if !bcs.validateTransaction(req) {
 		return nil, status.Errorf(codes.InvalidArgument, "failed due to missing fields")
 	}
@@ -103,7 +104,7 @@ func (bcs *BlockChainServer) convertBlockChain(bc []*blockchain.Block) []*protog
 		blockchain = append(blockchain, &protogen.Block{
 			Nonce:        int64(b.Nonce),
 			Index:        int64(b.Index),
-			PreviousHash: fmt.Sprintf("%x", b.Hash),
+			PreviousHash: fmt.Sprintf("%x", b.PreviousHash),
 			Timestamp:    b.TimeStamp,
 			Hash:         fmt.Sprintf("%x", b.Hash),
 			Transactions: bcs.convertTransactions(b.Transactions),
@@ -121,7 +122,6 @@ func (bcs *BlockChainServer) convertTransactions(tx []*transaction.Transaction) 
 			Value:                      t.Value,
 			Hash:                       fmt.Sprintf("%x", t.Hash),
 			Timestamp:                  t.TimeStamp,
-			Status:                     t.Status,
 		})
 	}
 	return transactions

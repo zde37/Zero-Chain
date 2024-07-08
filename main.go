@@ -2,29 +2,38 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 
-	"github.com/zde37/Zero-Chain/blockchain"
+	_ "github.com/joho/godotenv/autoload"
+	"github.com/zde37/Zero-Chain/config"
+	"github.com/zde37/Zero-Chain/server"
+	"github.com/zde37/Zero-Chain/service"
 )
 
 func main() {
-	port := flag.Uint("port", 4000, "blockchain server port")
+	blockchainGRPCPort := flag.Uint("bch-grpc", 7000, "blockchain grpc server port") // the range is from 7000-7003. Adjust according to your needs
+	blockchainGatewayPort := flag.Uint("bch-gateway", 7070, "blockchain gateway server port")
+	host := flag.String("bch-host", "127.0.0.1", "blockchain server host")
+	walletGRPCPort := flag.Uint("wal-grpc", 5000, "wallet grpc server port")
+	walletGatewayPort := flag.Uint("wal-gateway", 5050, "wallet gateway server port")
 	flag.Parse()
 
-	bc := blockchain.New("Sender-A", uint16(*port))
-	log.Println(bc.Chain)
-	log.Println(bc.MemPool)
-	bc.AddTransaction("A", "B", 2)
-	bc.AddTransaction("E", "F", 4)
-	log.Println(bc.MemPool)
+	config := config.LoadConfig(fmt.Sprintf("0.0.0.0:%d", *walletGRPCPort), fmt.Sprintf("0.0.0.0:%d", *walletGatewayPort),
+		fmt.Sprintf("%s:%d", *host, *blockchainGRPCPort), fmt.Sprintf("%s:%d", *host, *blockchainGatewayPort))
 
-	bc.Mining()
-	log.Println(bc.Chain)
-	log.Println(bc.MemPool)
-	bc.AddTransaction("Y", "Z", 1)
-	log.Println(bc.MemPool)
-	
-	bc.Mining()
-	log.Println(bc.Chain)
-	log.Println(bc.MemPool)
+	blockchainService := service.NewBlockChainServiceImpl(uint16(*blockchainGRPCPort))
+	walletService, err := service.NewWalletServiceImpl(uint16(*walletGRPCPort), fmt.Sprintf("%s:%d", *host, *blockchainGRPCPort))
+	if err != nil {
+		log.Fatalf("failed to create wallet service: %v", err)
+	}
+
+	bcGRPCServer := server.NewBlockChainServer(blockchainService, config)
+	walletGRPCServer := server.NewWalletServer(walletService, config)
+
+	go bcGRPCServer.RunGatewayServer()
+	go bcGRPCServer.RunGrpcServer()
+
+	// go walletGRPCServer.RunGrpcServer()
+	walletGRPCServer.RunGatewayServer()
 }

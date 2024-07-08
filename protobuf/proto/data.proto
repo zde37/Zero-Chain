@@ -16,8 +16,7 @@ message Transaction {
   string recipient_blockchain_address = 2; 
   float value = 3; 
   string hash = 4;
-  string timestamp = 5;    
-  string status = 6;   
+  string timestamp = 5;
 }
 
 message TransactionRequest {

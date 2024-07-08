@@ -11,11 +11,11 @@ func LoadConfig(
 	walletGrpcServerAddr,
 	walletGatewayServerAddr,
 	blockChainGrpcServerAddr,
-	blockChainGatewayServerAddr string) (Config, error) {
+	blockChainGatewayServerAddr string) Config {
 	return Config{
 		WalletGrpcServerAddr:        walletGrpcServerAddr,
 		WalletGatewayServerAddr:     walletGatewayServerAddr,
 		BlockChainGrpcServerAddr:    blockChainGrpcServerAddr,
 		BlockChainGatewayServerAddr: blockChainGatewayServerAddr,
-	}, nil
+	}
 }

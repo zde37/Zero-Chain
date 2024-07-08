@@ -30,7 +30,7 @@ func NewMetaData(senderPrivateKey *ecdsa.PrivateKey, senderPublicKey *ecdsa.Publ
 }
 
 func (md *MetaData) GenerateSignature() *helpers.Signature {
-	m, err := json.Marshal(md)
+	m, err := md.MarshalJSON()
 	if err != nil {
 		log.Printf("wallet: failed to marshal transaction: %v", err)
 		return nil
@@ -57,4 +57,16 @@ func (md *MetaData) Validate() bool {
 	}
 
 	return true
+}
+
+func (md *MetaData) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Sender    string  `json:"sender_blockchain_address"`
+		Recipient string  `json:"recipient_blockchain_address"`
+		Value     float32 `json:"value"`
+	}{
+		Sender:    md.SenderBlockchainAddress,
+		Recipient: md.RecipientBlockchainAddress,
+		Value:     md.Value,
+	})
 }

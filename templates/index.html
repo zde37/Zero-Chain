@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Zero-Chain Wallet</title>
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+    />
+    <style>
+      body {
+        padding-top: 20px;
+        background-color: #f8f9fa;
+      }
+
+      .container {
+        max-width: 900px;
+      }
+
+      .card {
+        margin-bottom: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .card-header {
+        background-color: #007bff;
+        color: white;
+        font-size: 1.5em;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .card-body {
+        padding: 20px;
+      }
+
+      textarea,
+      input[type="text"] {
+        resize: none;
+        width: 100%;
+        margin-bottom: 10px;
+        border-radius: 5px;
+        border: 1px solid #ced4da;
+        padding: 10px;
+        font-size: 1em;
+        transition: border-color 0.3s, box-shadow 0.3s;
+      }
+
+      textarea:focus,
+      input[type="text"]:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+      }
+
+      #wallet_amount {
+        font-size: 2em;
+        font-weight: bold;
+        color: #28a745;
+        margin-bottom: 20px;
+      }
+
+      .btn-primary {
+        background-color: #007bff;
+        border-color: #007bff;
+        border-radius: 5px;
+        padding: 10px 20px;
+        font-size: 1em;
+        transition: background-color 0.3s, border-color 0.3s;
+      }
+
+      .btn-primary:hover {
+        background-color: #0056b3;
+        border-color: #004085;
+      }
+
+      .icon {
+        margin-right: 10px;
+      }
+
+      @media (max-width: 576px) {
+        textarea,
+        input[type="text"] {
+          font-size: 1.2em;
+          padding: 15px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="card">
+        <div class="card-header text-center">
+          <i class="fas fa-wallet icon"></i> Wallet
+        </div>
+        <div class="card-body">
+          <div id="wallet_amount" class="text-center mb-3">0</div>
+
+          <div class="form-group">
+            <label for="public_key">Public Key</label>
+            <textarea
+              id="public_key"
+              class="form-control"
+              rows="2"
+              readonly
+            ></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="private_key">Private Key</label>
+            <textarea
+              id="private_key"
+              class="form-control"
+              rows="2"
+              readonly
+            ></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="blockchain_address">Blockchain Address</label>
+            <textarea
+              id="blockchain_address"
+              class="form-control"
+              rows="2"
+              readonly
+            ></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header text-center">
+          <i class="fas fa-paper-plane icon"></i> Send Money
+        </div>
+        <div class="card-body">
+          <div class="form-group">
+            <label for="recipient_blockchain_address">Recipient Address</label>
+            <input
+              id="recipient_blockchain_address"
+              class="form-control"
+              type="text"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="send_amount">Amount</label>
+            <input id="send_amount" class="form-control" type="number" />
+          </div>
+
+          <button id="send_money_button" class="btn btn-primary btn-block">
+            <i class="fas fa-paper-plane icon"></i> Send
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script>
+      $(function () {
+        $.ajax({
+          url: "/v1/wallet",
+          type: "GET",
+          success: function (response) {
+            $("#public_key").val(response["public_key"]);
+            $("#private_key").val(response["private_key"]);
+            $("#blockchain_address").val(response["blockchain_address"]);
+            console.info(response);
+          },
+          error: function (error) {
+            console.error(error);
+          },
+        });
+
+        $("#send_money_button").click(function () {
+          let confirm_text = "Confirm send?";
+          let confirm_result = confirm(confirm_text);
+          if (confirm_result !== true) {
+            alert("Cancelled");
+            return;
+          }
+
+          let transaction_data = {
+            sender_private_key: $("#private_key").val(),
+            sender_blockchain_address: $("#blockchain_address").val(),
+            recipient_blockchain_address: $(
+              "#recipient_blockchain_address"
+            ).val(),
+            sender_public_key: $("#public_key").val(),
+            value: $("#send_amount").val(),
+          };
+
+          $.ajax({
+            url: "/v1/transaction",
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify(transaction_data),
+            success: function (response) {
+              console.info(response);
+              alert("Send success");
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+              let errorMessage = "Send failed";
+              try {
+                let errorResponse = JSON.parse(jqXHR.responseText);
+                if (errorResponse.message) {
+                  errorMessage =  errorResponse.message;
+                }
+              } catch (e) {
+                console.error("Error parsing error response:", e);
+              }
+              console.error(jqXHR.responseText);
+              alert(errorMessage);
+            },
+          });
+        });
+
+        function reload_amount() {
+          let data = { blockchain_address: $("#blockchain_address").val() };
+
+          $.ajax({
+            url: "/v1/wallet/balance",
+            type: "GET",
+            data: data,
+            success: function (response) {
+              let amount = response["balance"];
+              $("#wallet_amount").text(amount);
+              console.info(amount);
+            },
+            error: function (error) {
+              console.error(error);
+            },
+          });
+        }
+
+        setInterval(reload_amount, 3000);
+      });
+    </script>
+  </body>
+</html>

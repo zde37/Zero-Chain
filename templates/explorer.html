@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Zero-Chain Explorer</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script>
+      $(document).ready(function () {
+        function fetchBlocks() {
+          $.ajax({
+            url: "/v1/blockchain",
+            type: "GET",
+            success: function (response) {
+              console.log("Response:", response);
+              let blocks = response.block_chain;
+              if (blocks) {
+                let blockList = $("#block_list");
+                blockList.empty();
+                blocks.forEach(function (block) {
+                  let blockElement = `
+                                    <div class="block">
+                                        <h3>Block ${block.index}</h3>
+                                        <p><strong>Hash:</strong> ${
+                                          block.hash
+                                        }</p>
+                                        <p><strong>Index:</strong> ${
+                                          block.index
+                                        }</p>
+                                        <p><strong>Nonce:</strong> ${
+                                          block.nonce
+                                        }</p>
+                                        <p><strong>Timestamp:</strong> ${
+                                          block.timestamp
+                                        }</p>
+                                        <p><strong>Previous Hash:</strong> ${
+                                          block.previous_hash
+                                        }</p>
+                                        <div class="transactions">
+                                            <h4>Transactions <i class="fa fa-chevron-down toggle-transactions"></i></h4>
+                                            <ul class="transaction-list">
+                                                ${block.transactions
+                                                  .map(
+                                                    (transaction) => `
+                                                    <li>
+                                                        <p><strong>Sender:</strong> ${transaction.sender_blockchain_address}</p>
+                                                        <p><strong>Recipient:</strong> ${transaction.recipient_blockchain_address}</p>
+                                                        <p><strong>Value:</strong> ${transaction.value}</p>
+                                                        <p><strong>Transaction Hash:</strong> ${transaction.hash}</p>
+                                                        <p><strong>Timestamp:</strong> ${transaction.timestamp}</p>
+                                                    </li>
+                                                `
+                                                  )
+                                                  .join("")}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                `;
+                  blockList.append(blockElement);
+                });
+
+                $(".toggle-transactions").click(function () {
+                  $(this).toggleClass("fa-chevron-down fa-chevron-up");
+                  $(this)
+                    .closest(".transactions")
+                    .find(".transaction-list")
+                    .slideToggle();
+                });
+              } else {
+                console.error("No blocks found in the response.");
+              }
+            },
+            error: function (error) {
+              console.error(error);
+              {{/* alert("Failed to fetch blockchain data."); */}}
+            },
+          });
+        }
+
+        fetchBlocks();
+        setInterval(fetchBlocks, 10000); // Refresh every 10 seconds
+      });
+    </script>
+  
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            width: 100%;
+        }
+        h1, h3, h4 {
+            text-align: center;
+            color: #0d6efd;
+        }
+        .block {
+            background: #fff;
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            overflow-wrap: break-word;
+        }
+        .block h3 {
+            margin-top: 0;
+        }
+        .transactions h4 {
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .transaction-list {
+            list-style: none;
+            padding: 0;
+            display: none;
+        }
+        .transaction-list li {
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            overflow-wrap: break-word;
+        }
+        @media (max-width: 768px) {
+            body {
+                padding: 10px; /* Add padding to the body for mobile view */
+            }
+            .block {
+                padding: 10px;
+            }
+            .block h3, .transactions h4 {
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Zero-Chain Explorer</h1>
+      <div id="block_list"></div>
+    </div>
+  </body>
+</html>
