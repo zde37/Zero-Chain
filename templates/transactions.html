@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Unconfirmed Transactions</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f9;
+        color: #333;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        min-height: 100vh;
+      }
+
+      .container {
+        max-width: 900px;
+        margin: 20px auto;
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        width: 100%;
+      }
+
+      h1 {
+        text-align: center;
+        color: #0d6efd;
+        margin-bottom: 20px;
+      }
+
+      .transaction {
+        background: #fff;
+        border: 1px solid #ddd;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        overflow-wrap: break-word;
+      }
+
+      .transaction p {
+        margin: 5px 0;
+      }
+
+      @media (max-width: 768px) {
+        body {
+          padding: 10px; /* Add padding to the body for mobile view */
+        }
+        .container {
+          margin: 10px; /* Add margin to the container for mobile view */
+        }
+        .transaction {
+          padding: 10px;
+        }
+        h1 {
+          font-size: 1.5rem;
+        }
+      }
+    </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script>
+      $(document).ready(function () {
+        function fetchTransactions() {
+          $.ajax({
+            url: "/v1/transaction",
+            type: "GET",
+            success: function (response) {
+              let transactions = response.transactions;
+              if (transactions.length === 0) {
+                {
+                  {
+                    /* $("#transactions").append(
+                  "<p>No unconfirmed transactions.</p>"
+                ); */
+                  }
+                }
+              } else {
+                 $("#transactions").empty();
+                 
+                transactions.forEach(function (transaction) {
+                  $("#transactions").append(`
+                                <div class="transaction">
+                                    <p><strong>Sender:</strong> ${transaction.sender_blockchain_address}</p>
+                                    <p><strong>Recipient:</strong> ${transaction.recipient_blockchain_address}</p>
+                                    <p><strong>Value:</strong> ${transaction.value} Z-Coin</p>
+                                    <p><strong>Hash:</strong> ${transaction.hash}</p>
+                                    <p><strong>Timestamp:</strong> ${transaction.timestamp}</p>
+                                </div>
+                            `);
+                });
+              }
+            },
+            error: function (error) {
+              console.error("Error fetching transactions:", error);
+              {
+                {
+                  /* $("#transactions").append("<p>Error fetching transactions.</p>"); */
+                }
+              }
+            },
+          });
+        }
+        fetchTransactions();
+        setInterval(fetchTransactions, 10000);
+      });
+    </script>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Unconfirmed Transactions</h1>
+      <div id="transactions"></div>
+    </div>
+  </body>
+</html>

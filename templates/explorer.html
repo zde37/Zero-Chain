@@ -77,7 +77,7 @@
             },
             error: function (error) {
               console.error(error);
-              {{/* alert("Failed to fetch blockchain data."); */}}
+              alert("Failed to fetch blockchain data.");
             },
           });
         }
@@ -89,69 +89,85 @@
   
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
-            color: #333;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            width: 100%;
-        }
-        h1, h3, h4 {
-            text-align: center;
-            color: #0d6efd;
-        }
-        .block {
-            background: #fff;
-            border: 1px solid #ddd;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            overflow-wrap: break-word;
-        }
-        .block h3 {
-            margin-top: 0;
-        }
-        .transactions h4 {
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .transaction-list {
-            list-style: none;
-            padding: 0;
-            display: none;
-        }
-        .transaction-list li {
-            background: #f9f9f9;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 10px;
-            overflow-wrap: break-word;
-        }
-        @media (max-width: 768px) {
-            body {
-                padding: 10px; /* Add padding to the body for mobile view */
-            }
-            .block {
-                padding: 10px;
-            }
-            .block h3, .transactions h4 {
-                font-size: 1.2rem;
-            }
-        }
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
+    color: #333;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 900px;
+    margin: 20px auto;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    width: 100%;
+}
+
+h1 {
+    text-align: center;
+    color: #0d6efd;
+    margin-bottom: 20px;
+}
+
+.block {
+    background: #fff;
+    border: 1px solid #ddd;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    overflow-wrap: break-word;
+}
+
+.block p {
+    margin: 5px 0;
+}
+
+.transaction-list {
+    display: none;
+    padding-left: 20px;
+}
+
+.transaction-list p {
+    margin: 5px 0;
+}
+
+.toggle-btn {
+    background: none;
+    border: none;
+    color: #0d6efd;
+    cursor: pointer;
+    padding: 0;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+}
+
+.toggle-btn i {
+    margin-right: 5px;
+}
+
+@media (max-width: 768px) {
+    body {
+        padding: 10px; /* Add padding to the body for mobile view */
+    }
+    .container {
+        margin: 10px; /* Add margin to the container for mobile view */
+    }
+    .block {
+        padding: 10px;
+    }
+    h1 {
+        font-size: 1.5rem;
+    }
+}
+
     </style>
   </head>
   <body>

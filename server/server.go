@@ -102,6 +102,21 @@ func (bcs *BlockChainServer) RunGatewayServer() {
 		}
 		tpl.Execute(w, "")
 	}))
+	mux.Handle("/transactions", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { // health route
+		var (
+			err  error
+			once sync.Once
+			tpl  *template.Template
+		)
+
+		once.Do(func() {
+			tpl, err = template.ParseFiles("./templates/transactions.html")
+		})
+		if err != nil {
+			log.Fatalf("failed to parse template: %v", err)
+		}
+		tpl.Execute(w, "")
+	}))
 	httpServer := &http.Server{
 		Handler: mux,
 		Addr:    bcs.config.BlockChainGatewayServerAddr,
