@@ -39,20 +39,3 @@ func (b *Block) GenerateHash() [32]byte {
 	}
 	return sha256.Sum256([]byte(m))
 }
-
-// // MarshalJSON is created so the value of Hash and PreviousHash will be printed as string not [32]byte
-// func (b *Block) MarshalJSON() ([]byte, error) {
-// 	return json.Marshal(struct {
-// 		Hash         string         `json:"hash"`
-// 		Nonce        int            `json:"int"`
-// 		Timestamp    int64          `json:"timestamp"`
-// 		PreviousHash string         `json:"previous_hash"`
-// 		Transactions []*Transaction `json:"transactions"`
-// 	}{
-// 		Timestamp:    b.Timestamp,
-// 		Nonce:        b.Nonce,
-// 		PreviousHash: fmt.Sprintf("%x", b.PreviousHash),
-// 		Hash:         fmt.Sprintf("%x", b.Hash),
-// 		Transactions: b.Transactions,
-// 	})
-// }

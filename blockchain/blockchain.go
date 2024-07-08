@@ -230,7 +230,6 @@ func (bc *BlockChain) AddTransaction(senderBlockChainAddress, recipientBlockChai
 }
 
 func (bc *BlockChain) VerifyTransactionSignature(senderPublicKey *ecdsa.PublicKey, s *helpers.Signature, t *transaction.Transaction) bool {
-	// m, err := json.Marshal(t)
 	m, err := t.MarshalJSON()
 	if err != nil {
 		log.Printf("blockchain: failed to marshal transaction: %v", err)
@@ -246,9 +245,7 @@ func (bc *BlockChain) StartMining() {
 		for range ticker.C {
 			bc.Mining()
 		}
-	}(t) // add ticker.Stop() during graceful shutdown
-	// bc.Mining()
-	// _ = time.AfterFunc(MINING_TIMER_SEC*time.Second, bc.Mining)
+	}(t) // add ticker.Stop() during graceful shutdown 
 }
 
 func (bc *BlockChain) Mining() {
