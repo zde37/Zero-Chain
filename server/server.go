@@ -87,7 +87,7 @@ func (bcs *BlockChainServer) RunGatewayServer() {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("Hello World"))
 	}))
-	mux.Handle("/explorer", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { // health route
+	mux.Handle("/explorer", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { 
 		var (
 			err  error
 			once sync.Once
@@ -102,7 +102,7 @@ func (bcs *BlockChainServer) RunGatewayServer() {
 		}
 		tpl.Execute(w, "")
 	}))
-	mux.Handle("/transactions", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { // health route
+	mux.Handle("/transactions", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { 
 		var (
 			err  error
 			once sync.Once
@@ -180,7 +180,7 @@ func (s *WalletServer) RunGatewayServer() {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("Hello World"))
 	}))
-	mux.Handle("/index", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { // health route
+	mux.Handle("/index", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { 
 		var (
 			err  error
 			once sync.Once
